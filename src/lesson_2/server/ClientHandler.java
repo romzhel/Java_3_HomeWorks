@@ -8,7 +8,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 public class ClientHandler {
-    private final lesson_2.server.MyServer myServer;
+    private final MyServer myServer;
     private final Socket socket;
     private final DataInputStream in;
     private final DataOutputStream out;
