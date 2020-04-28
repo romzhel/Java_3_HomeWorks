@@ -1,7 +1,7 @@
-package lesson_2.server;
+package server;
 
-import lesson_2.server.auth_service.AuthService;
-import lesson_2.server.auth_service.BaseAuthService;
+import server.auth_service.AuthService;
+import server.auth_service.BaseAuthService;
 
 import java.io.IOException;
 import java.net.ServerSocket;

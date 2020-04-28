@@ -1,4 +1,4 @@
-package lesson_2.server.auth_service;
+package server.auth_service;
 
 import java.util.ArrayList;
 import java.util.List;

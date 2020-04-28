@@ -1,4 +1,4 @@
-package lesson_2.client;
+package client;
 
 import java.io.Closeable;
 import java.io.DataInputStream;
@@ -73,7 +73,7 @@ public class Network implements Closeable {
             clientListenerThread.setDaemon(true);
             clientListenerThread.start();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Не удалось подключиться к серверу");
         }
     }
 

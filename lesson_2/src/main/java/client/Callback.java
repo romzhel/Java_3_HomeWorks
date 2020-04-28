@@ -1,4 +1,4 @@
-package lesson_2.client;
+package client;
 
 public interface Callback {
     void callback(Object... args);

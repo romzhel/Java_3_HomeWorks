@@ -1,4 +1,4 @@
-package lesson_2.client;
+package client;
 
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -26,7 +26,7 @@ public class Controller implements Initializable {
     @FXML
     ListView<String> clientsList;
 
-    private lesson_2.client.Network network;
+    private Network network;
 
     private boolean authenticated;
     private String nickname;
@@ -80,7 +80,7 @@ public class Controller implements Initializable {
     }
 
     public void linkCallbacks() {
-        network = new lesson_2.client.Network();
+        network = new Network();
         network.setCallOnException(args -> showAlert(args[0].toString()));
 
         network.setCallOnCloseConnection(args -> setAuthenticated(false));

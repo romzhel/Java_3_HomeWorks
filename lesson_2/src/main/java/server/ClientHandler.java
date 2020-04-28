@@ -1,4 +1,4 @@
-package lesson_2.server;
+package server;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -19,7 +19,7 @@ public class ClientHandler {
         return name;
     }
 
-    public ClientHandler(lesson_2.server.MyServer myServer, Socket socket) {
+    public ClientHandler(MyServer myServer, Socket socket) {
         try {
             this.myServer = myServer;
             this.socket = socket;
