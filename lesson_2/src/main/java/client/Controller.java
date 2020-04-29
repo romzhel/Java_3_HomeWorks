@@ -12,6 +12,9 @@ import java.util.ResourceBundle;
 
 public class Controller implements Initializable {
     @FXML
+    MenuBar mnuBar;
+
+    @FXML
     TextArea textArea;
 
     @FXML
@@ -33,6 +36,7 @@ public class Controller implements Initializable {
 
     public void setAuthenticated(boolean authenticated) {
         this.authenticated = authenticated;
+        mnuBar.setVisible(authenticated);
         authPanel.setVisible(!authenticated);
         authPanel.setManaged(!authenticated);
         msgPanel.setVisible(authenticated);
@@ -72,6 +76,20 @@ public class Controller implements Initializable {
         }
     }
 
+    public void changeNick() {
+        TextInputDialog nickInputDialog = new TextInputDialog();
+        nickInputDialog.setHeaderText("Смена ника " + nickname);
+        nickInputDialog.setContentText("Введите новый ник");
+
+        String newNick = nickInputDialog.showAndWait().orElse("");
+
+        if (!newNick.trim().isEmpty() && !newNick.equals(nickname)) {
+            network.sendMsg("/cn " + newNick);
+        } else {
+            showAlert("Ник не был изменён");
+        }
+    }
+
     public void showAlert(String msg) {
         Platform.runLater(() -> {
             Alert alert = new Alert(Alert.AlertType.WARNING, msg, ButtonType.OK);
@@ -102,6 +120,10 @@ public class Controller implements Initializable {
                         clientsList.getItems().clear();
                         clientsList.getItems().addAll(Arrays.asList(msg.replaceFirst("/cs ", "")
                                 .split("\\s")));
+                    } else if (msg.startsWith("/cne")) {
+                        showAlert("Не удалось сменить ник\nПричина: " + msg.replaceFirst("/cne ", ""));
+                    } else if (msg.startsWith("/cns")) {
+                        nickname = msg.replaceFirst("/cns ", "");
                     }
                 } else {
                     textArea.appendText(msg + "\n");
