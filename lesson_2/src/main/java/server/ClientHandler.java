@@ -15,10 +15,6 @@ public class ClientHandler {
 
     private String name;
 
-    public String getName() {
-        return name;
-    }
-
     public ClientHandler(MyServer myServer, Socket socket) {
         try {
             this.myServer = myServer;
@@ -38,19 +34,23 @@ public class ClientHandler {
                     authentication();
                     timer.cancel();
                     readMessages();
-                } catch (IOException e) {
-                    e.printStackTrace();
+                } catch (Exception e) {
+                    System.out.println("Завершение потока обработки входящих сообщений, причина: " + e.getMessage());
                 } finally {
                     closeConnection();
                     Thread.currentThread().interrupt();
                 }
             }).start();
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new RuntimeException("Проблемы при создании обработчика клиента");
         }
     }
 
-    public void authentication() throws IOException {
+    public String getName() {
+        return name;
+    }
+
+    public void authentication() throws Exception {
         while (true) {
             String str = in.readUTF();
             if (str.startsWith("/auth")) {
@@ -83,9 +83,25 @@ public class ClientHandler {
                 strFromClient = strFromClient.replaceFirst("/w ", "");
                 int spacePos = strFromClient.indexOf(" ");
                 myServer.personalMsg(name, strFromClient.substring(0, spacePos), strFromClient.substring(spacePos + 1));
+            } else if (strFromClient.startsWith("/cn")) {
+                String newNick = strFromClient.replaceFirst("/cn ", "");
+                changeNick(newNick);
             } else {
                 myServer.broadcastMsg(name + ": " + strFromClient);
             }
+        }
+    }
+
+    private void changeNick(String newNick) {
+        try {
+            myServer.getAuthService().changeNick(name, newNick);
+            sendMsg("/cns " + newNick);
+            myServer.broadcastMsgExcept("/r " + name, this);
+            myServer.broadcastMsgExcept("/a " + newNick, this);
+            myServer.broadcastMsg(name + " сменил свой ник на " + newNick);
+            name = newNick;
+        } catch (Exception e) {
+            sendMsg("/cne " + e.getMessage());
         }
     }
 

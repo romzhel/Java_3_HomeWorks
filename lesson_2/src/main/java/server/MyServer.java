@@ -1,9 +1,8 @@
 package server;
 
 import server.auth_service.AuthService;
-import server.auth_service.BaseAuthService;
+import server.auth_service.SqliteAuthService;
 
-import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -17,7 +16,7 @@ public class MyServer {
 
     public MyServer() {
         try (ServerSocket server = new ServerSocket(PORT)) {
-            authService = new BaseAuthService();
+            authService = new SqliteAuthService();
             authService.start();
             clients = new ArrayList<>();
 
@@ -27,8 +26,8 @@ public class MyServer {
                 System.out.println("Клиент подключился, ожидание авторизации");
                 new ClientHandler(this, socket);
             }
-        } catch (IOException e) {
-            System.out.println("Ошибка в работе сервера");
+        } catch (Exception e) {
+            System.out.println("Ошибка в работе сервера: " + e.getMessage());
         } finally {
             if (authService != null) {
                 authService.stop();
@@ -52,6 +51,14 @@ public class MyServer {
     public synchronized void broadcastMsg(String msg) {
         for (ClientHandler o : clients) {
             o.sendMsg(msg);
+        }
+    }
+
+    public synchronized void broadcastMsgExcept(String msg, ClientHandler exceptClientHandler) {
+        for (ClientHandler o : clients) {
+            if (o != exceptClientHandler) {
+                o.sendMsg(msg);
+            }
         }
     }
 
