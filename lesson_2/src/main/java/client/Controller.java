@@ -101,11 +101,22 @@ public class Controller implements Initializable {
         network = new Network();
         network.setCallOnException(args -> showAlert(args[0].toString()));
 
-        network.setCallOnCloseConnection(args -> setAuthenticated(false));
+        network.setCallOnCloseConnection(args -> {
+            setAuthenticated(false);
+            ChatHistoryLogger.getInstance().close();
+        });
 
         network.setCallOnAuthenticated(args -> {
             setAuthenticated(true);
             nickname = args[0].toString();
+
+            try {
+                ChatHistoryLogger.getInstance().init(nickname);
+            } catch (Exception e) {
+                showAlert("Не удалось инициализировать модуль записи истории событий в файл.\n" + e.getMessage());
+            }
+            textArea.clear();
+            ChatHistoryLogger.getInstance().getHistory(100).forEach(s -> textArea.appendText(s + "\n"));
         });
 
         network.setCallOnMsgReceived(args -> {
@@ -127,6 +138,7 @@ public class Controller implements Initializable {
                     }
                 } else {
                     textArea.appendText(msg + "\n");
+                    ChatHistoryLogger.getInstance().saveMessage(msg + "\n");
                 }
             });
         });
