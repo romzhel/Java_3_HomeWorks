@@ -7,7 +7,7 @@ import java.net.Socket;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class ClientHandler {
+public class ClientHandler implements Runnable {
     private final MyServer myServer;
     private final Socket socket;
     private final DataInputStream in;
@@ -22,27 +22,28 @@ public class ClientHandler {
             this.in = new DataInputStream(socket.getInputStream());
             this.out = new DataOutputStream(socket.getOutputStream());
             this.name = "";
-            new Thread(() -> {
-                try {
-                    Timer timer = new Timer();
-                    timer.schedule(new TimerTask() {
-                        @Override
-                        public void run() {
-                            closeConnection();
-                        }
-                    }, 30_000);
-                    authentication();
-                    timer.cancel();
-                    readMessages();
-                } catch (Exception e) {
-                    System.out.println("Завершение потока обработки входящих сообщений, причина: " + e.getMessage());
-                } finally {
-                    closeConnection();
-                    Thread.currentThread().interrupt();
-                }
-            }).start();
         } catch (Exception e) {
             throw new RuntimeException("Проблемы при создании обработчика клиента");
+        }
+    }
+
+    @Override
+    public void run() {
+        try {
+            Timer timer = new Timer();
+            timer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    closeConnection();
+                }
+            }, 30_000);
+            authentication();
+            timer.cancel();
+            readMessages();
+        } catch (Exception e) {
+            System.out.println("Завершение потока обработки входящих сообщений, причина: " + e.getMessage());
+        } finally {
+            closeConnection();
         }
     }
 
@@ -121,8 +122,10 @@ public class ClientHandler {
     }
 
     public void closeConnection() {
-        myServer.unsubscribe(this);
-        myServer.broadcastMsg("/r " + name);
+        if (!name.isEmpty()) {
+            myServer.unsubscribe(this);
+            myServer.broadcastMsg("/r " + name);
+        }
         try {
             in.close();
         } catch (IOException e) {
@@ -137,6 +140,14 @@ public class ClientHandler {
             socket.close();
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    public void closeSocket() {
+        closeConnection();
+        try {
+            socket.close();
+        } catch (IOException e) {
         }
     }
 }
