@@ -7,14 +7,32 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.*;
 
 public class MyServer {
     private final int PORT = 8189;
+
+    private final int IDLE_THREADS_COUNT = 0;
+    private final int MAX_THREADS_COUNT = 3;
 
     private List<ClientHandler> clients;
     private AuthService authService;
 
     public MyServer() {
+        ExecutorService executorService = new ThreadPoolExecutor(IDLE_THREADS_COUNT, MAX_THREADS_COUNT,
+                0L, TimeUnit.MILLISECONDS, new SynchronousQueue<>(), new RejectedExecutionHandler() {
+            @Override
+            public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+                System.out.println("Достигнут лимит подключений клиентов");
+                //(ClientHandler)r - обработчик подключения клиента, которому не хватило потока, можно отправить ему
+                //данные для подключения к другому серверу и т.п., например:
+                new Thread(() -> {
+                    ((ClientHandler) r).sendMsg("/reconnect to");
+                    ((ClientHandler) r).closeSocket();
+                }).start();
+            }
+        });
+
         try (ServerSocket server = new ServerSocket(PORT)) {
             authService = new SqliteAuthService();
             authService.start();
@@ -23,8 +41,8 @@ public class MyServer {
             while (true) {
                 System.out.println("Сервер ожидает подключения");
                 Socket socket = server.accept();
-                System.out.println("Клиент подключился, ожидание авторизации");
-                new ClientHandler(this, socket);
+                System.out.println("Клиент подключился");
+                executorService.execute(new ClientHandler(this, socket));
             }
         } catch (Exception e) {
             System.out.println("Ошибка в работе сервера: " + e.getMessage());
@@ -32,10 +50,11 @@ public class MyServer {
             if (authService != null) {
                 authService.stop();
             }
+            executorService.shutdownNow();
         }
     }
 
-    public AuthService getAuthService() {
+    public synchronized AuthService getAuthService() {
         return authService;
     }
 
