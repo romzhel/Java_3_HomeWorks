@@ -1,5 +1,7 @@
 package server;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import server.auth_service.AuthService;
 import server.auth_service.SqliteAuthService;
 
@@ -10,47 +12,56 @@ import java.util.List;
 import java.util.concurrent.*;
 
 public class MyServer {
+    private static final Logger LOGGER = LogManager.getLogger(MyServer.class);
     private final int PORT = 8189;
-
     private final int IDLE_THREADS_COUNT = 0;
     private final int MAX_THREADS_COUNT = 3;
-
     private List<ClientHandler> clients;
     private AuthService authService;
 
     public MyServer() {
+        LOGGER.info("Запуск сервера");
         ExecutorService executorService = new ThreadPoolExecutor(IDLE_THREADS_COUNT, MAX_THREADS_COUNT,
                 0L, TimeUnit.MILLISECONDS, new SynchronousQueue<>(), new RejectedExecutionHandler() {
             @Override
             public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
-                System.out.println("Достигнут лимит подключений клиентов");
+                LOGGER.warn("Достигнут лимит подключений клиентов ({})", MAX_THREADS_COUNT);
                 //(ClientHandler)r - обработчик подключения клиента, которому не хватило потока, можно отправить ему
                 //данные для подключения к другому серверу и т.п., например:
                 new Thread(() -> {
                     ((ClientHandler) r).sendMsg("/reconnect to");
-                    ((ClientHandler) r).closeSocket();
+                    ((ClientHandler) r).closeConnection();
                 }).start();
             }
         });
 
         try (ServerSocket server = new ServerSocket(PORT)) {
+            LOGGER.trace("Создан сокет сервера - {}", server);
             authService = new SqliteAuthService();
             authService.start();
             clients = new ArrayList<>();
 
+            LOGGER.info("Сервер запущен и готов к подключению клиентов");
             while (true) {
-                System.out.println("Сервер ожидает подключения");
                 Socket socket = server.accept();
-                System.out.println("Клиент подключился");
-                executorService.execute(new ClientHandler(this, socket));
+                LOGGER.info("Подключился клиент - {}", socket);
+                ClientHandler clientHandler = null;
+                try {
+                    clientHandler = new ClientHandler(this, socket);
+                    executorService.submit(clientHandler);
+                } catch (Exception e) {
+                    LOGGER.error("Ошибка создания обработчика клиента - {}", socket);
+                    socket.close();
+                }
             }
         } catch (Exception e) {
-            System.out.println("Ошибка в работе сервера: " + e.getMessage());
+            LOGGER.fatal("Ошибка в работе сервера - {}", e.getMessage(), e);
         } finally {
             if (authService != null) {
                 authService.stop();
             }
             executorService.shutdownNow();
+            LOGGER.info("Работа сервера завершена");
         }
     }
 
