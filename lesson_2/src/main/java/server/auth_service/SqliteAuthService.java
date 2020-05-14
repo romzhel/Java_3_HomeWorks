@@ -1,11 +1,15 @@
 package server.auth_service;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
 public class SqliteAuthService implements AuthService {
+    private static final Logger LOGGER = LogManager.getLogger(SqliteAuthService.class);
     private Connection connection;
     private PreparedStatement getNick;
     private PreparedStatement checkNick;
@@ -19,6 +23,7 @@ public class SqliteAuthService implements AuthService {
             getNick = connection.prepareStatement("SELECT nick FROM users WHERE login = ? AND password = ?");
             checkNick = connection.prepareStatement("SELECT * FROM users WHERE nick = ?");
             changeNick = connection.prepareStatement("UPDATE users SET nick = ? WHERE nick = ?");
+            LOGGER.info("Сервер авторизации запущен");
         } catch (Exception e) {
             throw new RuntimeException("не удалось запустить сервер авторизации, ошибка: " + e.getMessage());
         }
@@ -70,5 +75,6 @@ public class SqliteAuthService implements AuthService {
             connection.close();
         } catch (Exception e) {
         }
+        LOGGER.trace("Сервиса авторизации остановлен");
     }
 }

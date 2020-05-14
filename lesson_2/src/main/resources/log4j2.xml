@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Configuration level="error">
+    <Properties>
+        <Property name="basePath">logs</Property>
+    </Properties>
+
+    <Appenders>
+        <RollingFile name="FILE" fileName="${basePath}/logfile.log"
+                     filePattern="${basePath}/$${date:yyyy-MM}/app-%d{yyyy-MM-dd}-%i.log.gz" append="true">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level (%F:%L) - %m%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy/>
+                <SizeBasedTriggeringPolicy size="20 kB"/>
+            </Policies>
+        </RollingFile>
+
+        <Console name="STDOUT" target="SYSTEM_OUT">
+            <ThresholdFilter level="error" onMatch="ACCEPT" onMismatch="DENY"/>
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level (%F:%L) %logger{36} - %m%n"/>
+        </Console>
+    </Appenders>
+
+    <Loggers>
+        <Logger name="server" level="info" additivity="true">
+            <AppenderRef ref="FILE"/>
+        </Logger>
+
+        <Root level="error">
+            <AppenderRef ref="STDOUT"/>
+        </Root>
+    </Loggers>
+</Configuration>
